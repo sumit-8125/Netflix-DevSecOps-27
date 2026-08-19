@@ -1,0 +1,306 @@
+Jenkins pipeline  --------
+
+eks provision ----------------
+
+
+pipeline{
+    agent any
+    stages {
+        stage('Checkout from Git'){
+            steps{
+                git branch: 'main', url: 'https://github.com/sumit-8125/Netflix-DevSecOps-27.git'
+            }
+        }
+        stage('Terraform version'){
+             steps{
+                 sh 'terraform --version'
+             }
+        }
+        stage('Terraform init'){
+             steps{
+                 dir('devsecops-netflix/EKS_TERRAFORM') {
+                      sh 'terraform init -reconfigure'
+                   }
+             }
+        }
+        stage('Terraform validate'){
+             steps{
+                 dir('devsecops-netflix/EKS_TERRAFORM') {
+                      sh 'terraform validate'
+                   }
+             }
+        }
+        stage('Terraform plan'){
+             steps{
+                 dir('devsecops-netflix/EKS_TERRAFORM') {
+                      sh 'terraform plan'
+                   }
+             }
+        }
+        stage('Terraform apply/destroy'){
+             steps{
+                 dir('devsecops-netflix/EKS_TERRAFORM') {
+                      sh 'terraform ${Action} --auto-approve'
+                   }
+             }
+        }
+    }
+}   
+
+-----------------------------------------------------------------------------------------------------------------------------------------
+
+docker test -------------
+
+
+
+pipeline{
+    agent any
+    tools{
+        jdk 'jdk25'
+        nodejs 'node25'
+    }
+    environment {
+        SCANNER_HOME=tool 'sonar-scanner'
+    }
+    stages {
+        stage('clean workspace'){
+            steps{
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git'){
+            steps{
+                git branch: 'main', url: 'https://github.com/sumit-8125/Netflix-DevSecOps-27.git'
+            }
+        }
+        stage("Sonarqube Analysis "){
+            steps{
+                dir('devsecops-netflix'){
+                withSonarQubeEnv('sonar-server') {
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=netflix \
+                    -Dsonar.projectKey=netflix '''
+                }
+            }
+        }
+    }
+        stage("quality gate"){
+           steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                dir('devsecops-netflix') {
+                sh "npm install"
+            }
+        }
+    }
+        stage('TRIVY FS SCAN') {
+            steps { 
+                dir('devsecops-netflix') {
+                sh "trivy fs . > trivyfs.txt"
+            }
+        }
+    }
+        stage("Docker Build & Push"){
+            steps{
+                script{
+                   withDockerRegistry(credentialsId: 'docker'){
+                       dir('devsecops-netflix') {
+                       sh "docker build --build-arg TMDB_V3_API_KEY=6472e0635fccf0b73e7eb0858b1277cd -t netflix ."
+                       sh "docker tag netflix 08122005/netflix:latest "
+                       sh "docker push 08122005/netflix:latest "
+                    }
+                }
+            }
+        }
+    }
+        stage("TRIVY"){
+            steps{ 
+                sh "trivy image 08122005/netflix:latest > trivyimage.txt"
+            }
+        }
+       stage('Deploy to container'){
+            steps{
+                sh 'docker rm -f netflix || true '
+                sh 'docker run -d --name netflix -p 8081:80 08122005/netflix:latest'
+            }
+        }
+    }
+    post {
+     always {
+        emailext attachLog: true,
+            subject: "'${currentBuild.result}'",
+            body: "Project: ${env.JOB_NAME}<br/>" +
+                "Build Number: ${env.BUILD_NUMBER}<br/>" +
+                "URL: ${env.BUILD_URL}<br/>",
+            to: 'sumitchoudhary68104@gmail.com',
+            attachmentsPattern: 'trivyfs.txt,trivyimage.txt'
+        }
+    }
+}
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+
+kubernets test --------
+
+
+
+pipeline{
+    agent any
+    tools{
+        jdk 'jdk25'
+        nodejs 'node25'
+    }
+    environment {
+        SCANNER_HOME=tool 'sonar-scanner'
+    }
+    stages {
+        stage('clean workspace'){
+            steps{
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git'){
+            steps{
+                git branch: 'main', url: 'https://github.com/sumit-8125/Netflix-DevSecOps-27.git'
+            }
+        }
+        stage("Sonarqube Analysis "){
+            steps{
+                dir('devsecops-netflix') {
+                withSonarQubeEnv('sonar-server') {
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=netflix \
+                    -Dsonar.projectKey=netflix '''
+                }
+            }
+        }
+    }
+        stage("quality gate"){
+           steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                dir('devsecops-netflix') {
+                sh "npm install"
+            }
+        }
+    }
+        stage('TRIVY FS SCAN') {
+            steps {
+                dir('devsecops-netflix') {
+                sh "trivy fs . > trivyfs.txt"
+            }
+        }
+    }
+        stage("Docker Build & Push"){
+            steps{
+                script{
+                   withDockerRegistry(credentialsId: 'docker'){
+                        dir('devsecops-netflix') {
+                       sh "docker build --build-arg TMDB_V3_API_KEY=6472e0635fccf0b73e7eb0858b1277cd -t netflix ."
+                       sh "docker tag netflix 08122005/netflix:latest "
+                       sh "docker push 08122005/netflix:latest "
+                    }
+                }
+            }
+        }
+    }
+        stage("TRIVY"){
+            steps{
+                sh "trivy image 08122005/netflix:latest > trivyimage.txt"
+            }
+        }
+       stage('Deploy to container'){
+            steps{
+                sh 'docker rm -f netflix 2>/dev/null || true'
+                sh 'docker run -d --name netflix -p 3001:80 08122005/netflix:latest'
+            }
+        }
+       stage('Deploy to kubernetes'){
+            steps{
+                script{
+                    dir('devsecops-netflix/Kubernetes') {
+                        withKubeConfig(caCertificate: '', clusterName: '', contextName: '', credentialsId: 'k8s', namespace: '', restrictKubeConfigAccess: false, serverUrl: '') {
+                                sh 'kubectl apply -f deployment.yml'
+                                sh 'kubectl apply -f service.yml'
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+}
+
+--------------------------------------------------------------------------------------------------------------------------------------
+monitoring test ----------
+
+
+pipeline{
+    agent any
+    tools{
+        jdk 'jdk25'
+        nodejs 'node25'
+    }
+    environment {
+        SCANNER_HOME=tool 'sonar-scanner'
+    }
+    stages {
+        stage('clean workspace'){
+            steps{
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git'){
+            steps{
+                git branch: 'main', url: 'https://github.com/sumit-8125/Netflix-DevSecOps-27.git'
+            }
+        }
+        stage("Sonarqube Analysis "){
+            steps{ 
+                dir('devsecops-netflix') {
+                withSonarQubeEnv('sonar-server') {
+                    sh ''' $SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=netflix \
+                    -Dsonar.projectKey=netflix '''
+                }
+            }
+        }
+    }
+        stage("quality gate"){
+           steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+            }
+        }
+      stage('Install Dependencies') {
+      steps {
+        dir('devsecops-netflix') {
+            sh 'npm install'
+        }
+    }
+}
+    }
+    post {
+     always {
+        emailext attachLog: true,
+            subject: "'${currentBuild.result}'",
+            body: "Project: ${env.JOB_NAME}<br/>" +
+                "Build Number: ${env.BUILD_NUMBER}<br/>" +
+                "URL: ${env.BUILD_URL}<br/>",
+            to: 'sumitchoudhary68104@gmail.com',
+            attachmentsPattern: 'trivyfs.txt,trivyimage.txt'
+        }
+    }
+}
+
+
+
