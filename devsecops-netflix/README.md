@@ -1,95 +1,81 @@
-<div align="center">
-  <a href="http://netflix-clone-with-tmdb-using-react-mui.vercel.app/">
-    <img src="./public/assets/netflix-logo.png" alt="Logo" width="100" height="32">
-  </a>
+🚀 My DevSecOps Project — Learning by Integrating the Entire Stack
 
-  <h3 align="center">Netflix Clone</h3>
+I recently completed a hands-on DevSecOps project where my main goal was not just to learn individual tools, but to understand how different technologies integrate with each other to build a complete CI/CD and cloud deployment workflow.
 
-  <p align="center">
-    <a href="https://netflix-clone-react-typescript.vercel.app/">View Demo</a>
-    ·
-    <a href="https://github.com/crazy-man22/netflix-clone-react-typescript/issues">Report Bug</a>
-    ·
-    <a href="https://github.com/crazy-man22/netflix-clone-react-typescript/issues">Request Feature</a>
-  </p>
-</div>
+The project started with infrastructure provisioning and gradually evolved into a complete DevSecOps pipeline:
 
-<details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#prerequests">Prerequests</a>
-    </li>
-    <li>
-      <a href="#which-features-this-project-deals-with">Which features this project deals with</a>
-    </li>
-    <li><a href="#third-party-libraries-used-except-for-react-and-rtk">Third Party libraries used except for React and RTK</a></li>
-    <li>
-      <a href="#contact">Contact</a>
-    </li>
-  </ol>
-</details>
+🔹 1️⃣ Infrastructure as Code — Terraform + AWS EKS
+I provisioned the Kubernetes infrastructure on AWS using Terraform, including the EKS environment and supporting resources.
 
-<br />
+🔹 2️⃣ Testing & Code Quality Pipeline
+Created a dedicated Jenkins pipeline for application testing and quality checks using:
 
-<div align="center">
-  <img src="./public/assets/home-page.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Home Page</p>
-  <img src="./public/assets/mini-portal.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Mini Portal</p>
-  <img src="./public/assets/detail-modal.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Detail Modal</p>
-  <img src="./public/assets/grid-genre.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Grid Genre Page</p>
-  <img src="./public/assets/watch.png" alt="Logo" width="100%" height="100%">
-  <p align="center">Watch Page with customer contol bar</p>
-</div>
+SonarQube
+OWASP security practices
+Quality Gates
+Dependency management
 
-## Prerequests
+🔹 3️⃣ Docker & Container Security Pipeline
+Built the application using a Dockerfile, created Docker images, pushed them to Docker Hub, scanned them with Trivy (Aqua Security), and deployed the application directly as a container.
 
-- Create an account if you don't have on [TMDB](https://www.themoviedb.org/).
-  Because I use its free API to consume movie/tv data.
-- And then follow the [documentation](https://developers.themoviedb.org/3/getting-started/introduction) to create API Key
-- Finally, if you use v3 of TMDB API, create a file named `.env`, and copy and paste the content of `.env.example`.
-  And then paste the API Key you just created.
+🔹 4️⃣ Kubernetes Deployment Pipeline
+Created another Jenkins pipeline for Kubernetes deployment. I used separate YAML manifests for:
 
-## Which features this project deal with
+Deployment
+Service
 
-- How to create and use [Custom Hooks](https://reactjs.org/docs/hooks-custom.html)
-- How to use [Context](https://reactjs.org/docs/context.html) and its provider
-- How to use lazy and Suspense for [Code-Splitting](https://reactjs.org/docs/code-splitting.html)
-- How to use a new [lazy](https://reactrouter.com/en/main/route/lazy) feature of react-router to reduce bundle size.
-- How to use data [loader](https://reactrouter.com/en/main/route/loader) of react-router, and how to use redux dispatch in the loader to fetch data before rendering component.
-- How to use [Portal](https://reactjs.org/docs/portals.html)
-- How to use [Fowarding Refs](https://reactjs.org/docs/forwarding-refs.html) to make components reusuable
-- How to create and use [HOC](https://reactjs.org/docs/higher-order-components.html)
-- How to customize default theme of [MUI](https://mui.com/)
-- How to use [RTK](https://redux-toolkit.js.org/introduction/getting-started)
-- How to use [RTK Query](https://redux-toolkit.js.org/rtk-query/overview)
-- How to customize default classname of [MUI](https://mui.com/material-ui/experimental-api/classname-generator)
-- Infinite Scrolling(using [Intersection Observer API](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API))
-- How to make awesome carousel using [slick-carousel](https://react-slick.neostack.com)
+The application was deployed on Kubernetes and exposed through an AWS Application Load Balancer (ALB).
 
-## Third Party libraries used except for React and RTK
+I also implemented both deployment approaches — Docker container deployment and Kubernetes deployment — to build a stronger foundation in containerization and orchestration.
 
-- [react-router-dom@v6.9](https://reactrouter.com/en/main)
-- [MUI(Material UI)](https://mui.com/)
-- [framer-motion](https://www.framer.com/docs/)
-- [video.js](https://videojs.com)
-- [react-slick](https://react-slick.neostack.com/)
+🛡️ The major focus: DevSecOps
 
-## Install with Docker
+Security was one of the most important parts of this project. I integrated security into the CI/CD workflow using:
 
-```sh
-docker build --build-arg TMDB_V3_API_KEY=your_api_key_here -t netflix-clone .
+✅ SonarQube for code quality and static analysis
+✅ OWASP-based security practices
+✅ Trivy for container/image vulnerability scanning
+✅ Dependency and security checks
+✅ Quality Gates to prevent poor-quality code from moving forward
 
-docker run --name netflix-clone-website --rm -d -p 80:80 netflix-clone
-```
+📊 Monitoring, Observability & Tracing
 
-## Todo
+I also worked on the observability side and integrated:
 
-- Make the animation of video card portal more similar to Netflix.
-- Improve performance. I am using `context` and `provider` but all components subscribed to the context's value are re-rendered. These re-renders happen even if the part of the value is not used in render of the component. there are [several ways](https://blog.axlight.com/posts/4-options-to-prevent-extra-rerenders-with-react-context/) to prevent the re-renders from these behaviours. In addition to them, there may be several performance issues.
-- Replace bundler([Vite](https://vitejs.dev/guide)) with [Turbopack](https://turbo.build/pack/docs/why-turbopack). Turbopack is introduced in Next.js conf recently. It's very fast but it's nor ready to use right now. it just support Next.js, and they plan to support all others as soon as possible. so if it's ready to use, replace [Vite](https://vitejs.dev/guide) with [Turbopack](https://turbo.build/pack/docs/why-turbopack).
-- Add accessibilities for better UX.
-- Add Tests.
+Prometheus → Metrics
+Grafana → Dashboards & visualization
+Loki → Logs
+Jaeger → Distributed tracing
+Gmail → CI/CD notifications
+
+🌐 API Integration
+
+Another interesting part was integrating the TMDB API with the application. Instead of relying only on static frontend data, the frontend consumes movie-related data through API calls.
+
+This helped me understand not only DevOps tooling, but also how application → API → container → CI/CD → infrastructure → Kubernetes → monitoring can fit together as one system.
+
+🔧 The most valuable part: Troubleshooting
+
+While building the project, I faced and resolved several real-world issues, including:
+
+• Port conflicts
+• Instance type / RAM and resource limitations
+• Networking and connectivity problems
+• Container deployment issues
+• Kubernetes deployment and service issues
+• CI/CD integration problems
+• Security scan and quality-gate related issues
+
+These problems were actually one of the biggest learning experiences because solving them required understanding why the components were failing, rather than simply following tutorials.
+
+🎯 What I learned most from this project
+
+The biggest takeaway is that DevSecOps is not about knowing Jenkins, Docker, Kubernetes, Terraform, SonarQube, or AWS individually.
+
+It is about understanding how these technologies work together and how security, automation, monitoring, testing, infrastructure, and deployment can become part of one continuous workflow.
+
+This project gave me a much stronger foundation in:
+
+Git → Jenkins → Terraform → AWS/EKS → SonarQube/OWASP → Trivy → Docker → Docker Hub → Kubernetes → ALB → Prometheus → Grafana → Loki → Jaeger → Notifications
+
+Still learning, still breaking things, and still fixing them — but that is exactly where the real learning happens. 🚀
